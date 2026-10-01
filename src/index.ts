@@ -3,31 +3,50 @@ import { z } from "zod";
 
 function createServer() {
   const server = new McpServer({
-    name: "hello-server",
-    version: "1.0.0"
+    name: "grok-bot-mcp",
+    version: "1.0.0",
   });
 
   server.registerTool(
-    "hello",
+    "send_message",
     {
-      description: "Returns a greeting",
+      description: "Grok Bot'a mesaj gönderir.",
       inputSchema: z.object({
-        name: z.string().optional()
-      })
+        mesaj: z.string().describe("Grok Bot'a gönderilecek mesaj"),
+      }),
     },
-    async ({ name }) => ({
-      content: [
-        {
-          type: "text",
-          text: `Hello, ${name ?? "World"}!`
-        }
-      ]
-    })
+    async ({ mesaj }) => {
+      const url =
+        "https://morning-art-1860.dj-dnz.workers.dev/?mesaj=" +
+        encodeURIComponent(mesaj);
+
+      const response = await fetch(url);
+      const result = await response.text();
+
+      if (!response.ok) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Mesaj gönderilemedi: ${response.status} ${result}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Grok Bot'a gönderildi: ${mesaj}\n${result}`,
+          },
+        ],
+      };
+    },
   );
 
   return server;
 }
 
-// A fresh server is created for each request. By default, the same handler
-// serves Stateless clients and the Legacy compatibility lane.
 export default createMcpHandler(createServer);
